@@ -1,0 +1,82 @@
+<style>
+    .ai-app-wrapper { display: flex; flex-direction: column; gap: 15px; height: 85vh; }
+    .ai-chat-container { display: flex; flex: 1; background-color: #f3f6f8; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; }
+    .ai-left-panel { width: 280px; background-color: #ffffff; border-right: 1px solid #e2e8f0; padding: 20px; display: flex; flex-direction: column; overflow-y: auto; }
+    .panel-header { font-weight: bold; color: #1e293b; margin-bottom: 15px; font-size: 15px; display: flex; align-items: center; gap: 5px; }
+    .ai-setting-item { margin-bottom: 15px; background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0; }
+    .ai-setting-item label { display: block; font-size: 12px; color: #64748b; margin-bottom: 5px; font-weight: bold; }
+    .ai-setting-item select, .ai-setting-item input { width: 100%; padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px; outline: none; background: #fff; }
+    .ai-setting-item input[readonly] { background: #e2e8f0; color: #475569; }
+    .context-tag { background-color: #e0f2fe; color: #0369a1; padding: 6px 12px; border-radius: 6px; font-size: 13px; margin-bottom: 10px; }
+    .ai-main-chat { flex: 1; display: flex; flex-direction: column; }
+    .chat-history { flex: 1; padding: 20px; overflow-y: auto; background-color: #f8fafc; }
+    .quick-actions { display: flex; gap: 10px; padding: 12px 20px; background-color: #ffffff; border-top: 1px solid #e2e8f0; overflow-x: auto; }
+    .quick-btn { background-color: #f1f5f9; border: 1px solid #cbd5e1; padding: 8px 16px; border-radius: 20px; font-size: 13px; color: #475569; cursor: pointer; white-space: nowrap; transition: all 0.2s; }
+    .quick-btn:hover { background-color: #e2e8f0; color: #0f172a; }
+    .chat-input-area { display: flex; padding: 15px 20px; background-color: #ffffff; }
+    .chat-input { flex: 1; padding: 12px 15px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none; font-size: 14px; }
+    .send-btn { margin-left: 10px; background-color: #2490ef; color: white; border: none; padding: 0 25px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .ai-log-panel { height: 150px; background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
+    .log-header { background-color: #e2e8f0; padding: 8px 15px; font-weight: bold; font-size: 14px; color: #334155; border-bottom: 1px solid #cbd5e1; }
+    .log-content { flex: 1; padding: 10px 15px; overflow-y: auto; font-family: monospace; font-size: 13px; background-color: #1e293b; }
+    .log-sys { color: #94a3b8; } .log-success { color: #4ade80; } .log-warn { color: #facc15; } .log-error { color: #f87171; }
+    
+    .ai-reply-content { line-height: 1.6; font-size: 14px; color: #1e293b; }
+    .ai-reply-content p { margin: 0 0 10px 0; }
+    .ai-reply-content p:last-child { margin-bottom: 0; }
+    .ai-reply-content strong { color: #0f172a; font-weight: 600; }
+    .ai-reply-content ul, .ai-reply-content ol { padding-left: 20px; margin-top: 5px; margin-bottom: 10px; }
+    .ai-reply-content pre { background-color: #1e293b; color: #f8fafc; padding: 12px; border-radius: 8px; overflow-x: auto; margin: 10px 0; font-family: monospace; }
+    .ai-reply-content code { background-color: #f1f5f9; color: #ef4444; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 13px; }
+    .ai-reply-content pre code { background-color: transparent; color: inherit; padding: 0; }
+
+    .ai-reply-content a { color: #2490ef; text-decoration: none; font-weight: bold; border-bottom: 1px solid transparent; transition: all 0.2s; }
+    .ai-reply-content a:hover { border-bottom: 1px solid #2490ef; }
+
+    .action-export-btn { background-color: #10b981; color: white; border: none; padding: 8px 15px; border-radius: 6px; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; font-weight: bold; transition: background 0.2s; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2); }
+    .action-export-btn:hover { background-color: #059669; }
+</style>
+
+<div class="ai-app-wrapper">
+    <div class="ai-chat-container">
+        <div class="ai-left-panel">
+            <div class="panel-header">🤖 AI 引擎配置</div>
+            <div class="ai-setting-item">
+                <label>选择 AI 平台</label>
+                <select id="ai-platform">
+                    <option value="deepseek">DeepSeek (性价比首选)</option>
+                    <option value="qwen" selected>Qwen 通义千问</option>
+                    <option value="glm4">GLM-4 智谱</option>
+                </select>
+            </div>
+            <div class="ai-setting-item"><label>Base URL 接口地址</label><input type="text" id="ai-base-url" value="https://dashscope.aliyuncs.com/compatible-mode/v1" readonly></div>
+            <div class="ai-setting-item"><label>调用模型 ID</label><input type="text" id="ai-model-id" value="qwen-plus" readonly></div>
+            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 15px 0;">
+            <div class="panel-header">📍 当前业务上下文</div>
+            <div class="context-tag">模块: 销售、采购、库存</div>
+            <div class="context-tag">状态: 七大核心挂载完毕</div>
+        </div>
+        <div class="ai-main-chat">
+            <div class="chat-history" id="chat-history">
+                <div style="text-align: left; margin-bottom: 15px;"><span style="background: #ffffff; border: 1px solid #e2e8f0; padding: 10px 15px; border-radius: 15px 15px 15px 0; display: inline-block;">您好！我是企业智能助手。七大业务查询工具已挂载，请随时向我发送指令。</span></div>
+            </div>
+            <div class="quick-actions">
+                <button class="quick-btn" data-msg="查看最近的销售订单">🛒 销售订单</button>
+                <button class="quick-btn" data-msg="查看最近的销售发票">🧾 销售发票</button>
+                <button class="quick-btn" data-msg="查看最近的采购入库单">📥 采购入库</button>
+                <button class="quick-btn" data-msg="查看最近的销售出库单">🚚 销售出库</button>
+                <button class="quick-btn" data-msg="查看最近的供应商报价">📝 供应商报价</button>
+                <button class="quick-btn" data-msg="查看最近的采购订单">🛍️ 采购订单</button>
+                <button class="quick-btn" data-msg="查看最近的采购发票">🧾 采购发票</button>
+            </div>
+            <div class="chat-input-area">
+                <input type="text" id="ai-user-input" class="chat-input" placeholder="输入你想查询的业务数据或操作问题...">
+                <button class="send-btn" id="send-btn">发送</button>
+            </div>
+        </div>
+    </div>
+    <div class="ai-log-panel">
+        <div class="log-header">🖥️ 运行日志监控 (系统状态：正常)</div>
+        <div class="log-content" id="ai-log-content"></div>
+    </div>
+</div>
