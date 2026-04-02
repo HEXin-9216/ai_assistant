@@ -3,8 +3,9 @@
  "creation": "2026-04-01 11:13:21.443047",
  "docstatus": 0,
  "doctype": "Page",
+ "icon": "chat",
  "idx": 0,
- "modified": "2026-04-01 11:13:21.443047",
+ "modified": "2026-04-02 11:40:07.212482",
  "modified_by": "Administrator",
  "module": "AI Assistant",
  "name": "ai-chat",
@@ -18,5 +19,6 @@
  "script": null,
  "standard": "Yes",
  "style": null,
- "system_page": 0
+ "system_page": 0,
+ "title": "AI Assistant"
 }

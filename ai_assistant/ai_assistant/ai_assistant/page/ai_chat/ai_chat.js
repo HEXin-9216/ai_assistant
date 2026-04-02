@@ -21,10 +21,30 @@ frappe.pages['ai-chat'].on_page_load = function(wrapper) {
 
     $wrapper.find('#ai-user-input').on('keypress', function(e) { if(e.which === 13) sendMessage(); });
     $wrapper.find('#send-btn').on('click', function() { sendMessage(); });
-    $wrapper.find('.quick-btn').on('click', function() {
+    
+    // 🌟 极其极其极其稳定的点击展开交互：彻底干掉不稳定的 Hover！
+    $wrapper.find('.dropdown > .quick-btn').on('click', function(e) {
+        e.stopPropagation(); // 极其关键：防止点击事件冒泡到 document，导致刚打开就秒关！
+        $(this).parent('.dropdown').toggleClass('show-menu');
+    });
+
+    // 🌟 极其乖巧的自动收起功能：当老板点击页面其他极其空白的地方时
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('.dropdown').length) {
+            $wrapper.find('.dropdown').removeClass('show-menu');
+        }
+    });
+
+    // 🌟 极其聪明的指令分发中枢
+    $wrapper.find('.quick-btn, .quick-btn-menu').on('click', function(e) {
         let msg = $(this).attr('data-msg');
-        $wrapper.find('#ai-user-input').val(msg);
-        sendMessage();
+        if (msg) {
+            e.preventDefault(); // 防止下拉菜单的超链接瞎跳
+            $wrapper.find('#ai-user-input').val(msg);
+            sendMessage();
+            // 极其贴心：老板一下达指令，菜单极其丝滑地自动收起隐身！
+            $wrapper.find('.dropdown').removeClass('show-menu'); 
+        }
     });
 
     $wrapper.find('#ai-platform').on('change', function() {
@@ -52,7 +72,6 @@ frappe.pages['ai-chat'].on_page_load = function(wrapper) {
 
     $wrapper.find('#chat-history').on('click', '.action-export-btn', function() {
         let dataId = $(this).attr('data-id');
-        // 🌟 极其智能地读取专属文件名前缀
         let filePrefix = $(this).attr('data-prefix') || "ERPNext数据导出"; 
         let data = window[dataId]; 
         
@@ -81,7 +100,6 @@ frappe.pages['ai-chat'].on_page_load = function(wrapper) {
         let link = document.createElement("a");
         let url = URL.createObjectURL(blob);
         link.setAttribute("href", url);
-        // 🌟 极其优雅的文件命名
         let fileName = filePrefix + "_" + new Date().toISOString().slice(0, 10) + ".csv";
         link.setAttribute("download", fileName);
         document.body.appendChild(link);
@@ -121,7 +139,7 @@ frappe.pages['ai-chat'].on_page_load = function(wrapper) {
                     if (r.message.action_button && r.message.action_button.type === 'export_excel') {
                         let actionDataId = 'export-data-' + Date.now();
                         window[actionDataId] = r.message.action_button.data; 
-                        let filePrefix = r.message.action_button.file_prefix || 'ERPNext数据导出'; // 🌟 读取后端传来的前缀
+                        let filePrefix = r.message.action_button.file_prefix || 'ERPNext数据导出'; 
                         actionBtnHtml = `
                             <div style="margin-top: 15px; border-top: 1px dashed #cbd5e1; padding-top: 12px;">
                                 <button class="action-export-btn" data-id="${actionDataId}" data-prefix="${filePrefix}">

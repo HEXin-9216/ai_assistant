@@ -3,7 +3,7 @@ import requests
 import json
 
 # =========================================================
-# 🛠️ 极其强大的本地业务工具箱 (九大金刚 - 含销售月报版)
+# 🛠️ 极其强大的本地业务工具箱 (十二大金刚 - 含成本烧钱追踪)
 # =========================================================
 
 # --- 销售模块 ---
@@ -160,16 +160,14 @@ def get_recent_purchase_invoices(limit=5, start_date=None, end_date=None):
         return {"text": result_str, "data": invoices_data}
     except Exception as e: return {"text": f"查询采购发票失败：{str(e)}", "data": []}
 
-# 🌟 新增：极其硬核的数据分析引擎（销售月报）
+# --- 财务及分析模块 ---
 def generate_sales_monthly_report(target_month=None):
     try:
-        # 如果大模型没推算出月份，默认极其聪明地使用当前月
         if not target_month:
-            target_month = frappe.utils.nowdate()[:7] # YYYY-MM 格式
+            target_month = frappe.utils.nowdate()[:7] 
             
         target_month_like = f"{target_month}%"
 
-        # 1. 极其高效的聚合运算：总单数与总流水 (只算未被取消的单据 docstatus < 2)
         overall_stats = frappe.db.sql("""
             SELECT COUNT(name) as total_orders, SUM(grand_total) as total_revenue
             FROM `tabSales Order`
@@ -182,7 +180,6 @@ def generate_sales_monthly_report(target_month=None):
         if total_orders == 0:
             return {"text": f"报告老板：经过极其仔细的盘点，系统在 {target_month} 月份没有产生任何销售订单数据。", "data": []}
 
-        # 2. 极其聪明的商业洞察：Top 5 客户大客户榜单
         top_customers = frappe.db.sql("""
             SELECT customer, SUM(grand_total) as revenue, COUNT(name) as order_count
             FROM `tabSales Order`
@@ -192,7 +189,6 @@ def generate_sales_monthly_report(target_month=None):
             LIMIT 5
         """, (target_month_like,), as_dict=True)
 
-        # 3. 把极其生硬的数字包装成喂给 AI 的高级简报
         result_str = f"这是 {target_month} 月份的极其详尽的销售业绩汇总数据：\n\n"
         result_str += f"- **总订单数**: {total_orders} 笔\n"
         result_str += f"- **总销售额**: ￥{total_revenue:,.2f}\n\n"
@@ -201,19 +197,151 @@ def generate_sales_monthly_report(target_month=None):
         report_data = []
         for idx, c in enumerate(top_customers):
             result_str += f"  {idx+1}. 客户: **{c.customer}** - 订单: {c.order_count}笔, 贡献金额: ￥{c.revenue:,.2f}\n"
-            # 整理出极其规整的 Excel 结构
             report_data.append({
-                "统计月份": target_month,
-                "排名": idx + 1,
-                "大客户名称": c.customer,
-                "下单总笔数": c.order_count,
-                "总贡献金额(元)": float(c.revenue)
+                "统计月份": target_month, "排名": idx + 1, "大客户名称": c.customer,
+                "下单总笔数": c.order_count, "总贡献金额(元)": float(c.revenue)
             })
 
         result_str += "\n老板，请根据以上极其精准的数据，写一份极其专业、有商业洞察的销售月报总结，并用漂亮的 Markdown 结构（如加粗、表格）展现出来！"
-        
         return {"text": result_str, "data": report_data}
     except Exception as e: return {"text": f"执行销售月报聚合分析失败：{str(e)}", "data": []}
+
+def get_overdue_sales_invoices(limit=10):
+    try:
+        limit = int(limit) if limit else 10
+        overdue_invoices = frappe.db.sql("""
+            SELECT name, customer, posting_date, due_date, grand_total, outstanding_amount, DATEDIFF(CURDATE(), due_date) as overdue_days
+            FROM `tabSales Invoice`
+            WHERE docstatus = 1 AND outstanding_amount > 0 AND due_date < CURDATE()
+            ORDER BY overdue_days DESC, outstanding_amount DESC
+            LIMIT %s
+        """, (limit,), as_dict=True)
+
+        if not overdue_invoices:
+            return {"text": "🎉 报告老板：系统内极其干净！没有任何逾期未收的销售账款，现金流极其健康！", "data": []}
+
+        total_overdue = sum([float(i.outstanding_amount) for i in overdue_invoices])
+
+        result_str = f"🚨 **极其紧急的催款雷达警告！**\n"
+        result_str += f"以下是当前系统内拖欠时间最长的账款单据（前 {limit} 笔），请务必尽快安排财务催收：\n\n"
+        
+        report_data = []
+        for i in overdue_invoices:
+            result_str += f"- 客户: **{i.customer}** | 发票: [{i.name}](/app/sales-invoice/{i.name}) | 逾期天数: **{i.overdue_days}天** | 未收金额: **￥{i.outstanding_amount:,.2f}**\n"
+            report_data.append({
+                "发票编号": i.name, "大客户名称": i.customer, "开票日期": str(i.posting_date),
+                "最晚收款日": str(i.due_date), "发票总金额(元)": float(i.grand_total),
+                "拖欠未付金额(元)": float(i.outstanding_amount), "已逾期天数": int(i.overdue_days)
+            })
+
+        result_str += f"\n💰 **总计预警待收金额**: **￥{total_overdue:,.2f}**\n"
+        result_str += "\n老板，我已经为您整理了极度详细的 Excel 催款清单，请直接点击下方按钮导出，以便发送给销售或财务部门进行精准催收！"
+        
+        return {"text": result_str, "data": report_data}
+    except Exception as e: return {"text": f"执行智能催款雷达扫描失败：{str(e)}", "data": []}
+
+def get_financial_health_summary():
+    try:
+        gl_summary = frappe.db.sql("""
+            SELECT a.root_type, SUM(gle.debit) as total_debit, SUM(gle.credit) as total_credit
+            FROM `tabGL Entry` gle
+            JOIN `tabAccount` a ON gle.account = a.name
+            WHERE gle.is_cancelled = 0
+            GROUP BY a.root_type
+        """, as_dict=True)
+
+        assets, liabilities, income, expense = 0.0, 0.0, 0.0, 0.0
+
+        for row in gl_summary:
+            if row.root_type == 'Asset':
+                assets += float(row.total_debit or 0) - float(row.total_credit or 0)
+            elif row.root_type == 'Liability':
+                liabilities += float(row.total_credit or 0) - float(row.total_debit or 0)
+            elif row.root_type == 'Income':
+                income += float(row.total_credit or 0) - float(row.total_debit or 0)
+            elif row.root_type == 'Expense':
+                expense += float(row.total_debit or 0) - float(row.total_credit or 0)
+
+        net_profit = income - expense
+
+        result_str = "🏥 **企业极其核心的财务体检简报**：\n\n"
+        result_str += f"- **总资产 (Assets)**: ￥{assets:,.2f}\n"
+        result_str += f"- **总负债 (Liabilities)**: ￥{liabilities:,.2f}\n"
+        result_str += f"- **累计收入 (Income)**: ￥{income:,.2f}\n"
+        result_str += f"- **累计支出 (Expense)**: ￥{expense:,.2f}\n"
+        result_str += f"- **当前账面净利润 (Net Profit)**: **￥{net_profit:,.2f}**\n\n"
+
+        if net_profit < 0:
+            result_str += "⚠️ **极其严肃的洞察警报**：老板，咱们目前的账面净利润处于**亏损状态**！请密切关注现金流储备，并核查近期大额支出科目！\n"
+        elif net_profit > 0 and assets > liabilities:
+            result_str += "✅ **极其振奋的洞察报告**：老板，公司目前的资产负债极其健康，账面实现**盈利**！请继续保持极其凶猛的增长势头！\n"
+        else:
+            result_str += "💡 **架构师洞察**：老板，目前利润为正，但请同步关注资产负债率，确保资金链极其充沛。\n"
+
+        report_data = [{
+            "体检日期": str(frappe.utils.today()),
+            "总资产(元)": assets, "总负债(元)": liabilities,
+            "总计收入(元)": income, "总计支出(元)": expense, "净利润(元)": net_profit
+        }]
+
+        return {"text": result_str, "data": report_data}
+    except Exception as e: return {"text": f"执行财务体检失败：{str(e)}", "data": []}
+
+# 🌟 极其炸裂的新增核武：成本中心“烧钱”追踪器
+def get_cost_center_expenses(cost_center=None, target_month=None, limit=10):
+    try:
+        limit = int(limit) if limit else 10
+        
+        conditions = ["a.root_type = 'Expense'", "gle.is_cancelled = 0"]
+        values = []
+
+        if target_month:
+            conditions.append("gle.posting_date LIKE %s")
+            values.append(f"{target_month}%")
+        
+        if cost_center:
+            conditions.append("gle.cost_center LIKE %s")
+            values.append(f"%{cost_center}%")
+
+        where_clause = " AND ".join(conditions)
+
+        # 极其霸气地跨表求和计算净花销
+        query = f"""
+            SELECT gle.account, gle.cost_center, SUM(gle.debit - gle.credit) as net_expense
+            FROM `tabGL Entry` gle
+            JOIN `tabAccount` a ON gle.account = a.name
+            WHERE {where_clause}
+            GROUP BY gle.account, gle.cost_center
+            HAVING net_expense > 0
+            ORDER BY net_expense DESC
+            LIMIT %s
+        """
+        values.append(limit)
+
+        expenses = frappe.db.sql(query, tuple(values), as_dict=True)
+
+        if not expenses:
+            return {"text": f"🎉 报告老板：在指定条件（月份：{target_month or '全部'}，成本中心：{cost_center or '全部'}）下没有发现任何支出记录！", "data": []}
+
+        total_expense = sum([float(e.net_expense) for e in expenses])
+
+        result_str = f"💸 **极其清晰的成本“烧钱”追踪明细**（月份：{target_month or '全部'} | 成本中心：{cost_center or '全部'}）：\n\n"
+        
+        report_data = []
+        for e in expenses:
+            result_str += f"- 科目: **{e.account}** | 成本中心: {e.cost_center} | 净支出: **￥{e.net_expense:,.2f}**\n"
+            report_data.append({
+                "统计月份": target_month or "全部",
+                "成本中心": e.cost_center or "未指定",
+                "支出科目": e.account,
+                "净支出金额(元)": float(e.net_expense)
+            })
+
+        result_str += f"\n🔥 **总计排查出上述科目的总支出**: **￥{total_expense:,.2f}**\n"
+        result_str += "\n老板，我已经为您揪出了极其具体的花销科目！请结合上述数据，为各部门下达极其严格的成本管控指令！"
+        
+        return {"text": result_str, "data": report_data}
+    except Exception as e: return {"text": f"执行成本追踪扫描失败：{str(e)}", "data": []}
 
 
 @frappe.whitelist()
@@ -225,48 +353,33 @@ def chat(message, platform, model_id):
         url = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
         headers = { "Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json" }
         
-        common_parameters = {
-            "type": "object",
-            "properties": {
-                "limit": {"type": "integer", "description": "查询返回的记录数量，默认 5。如果用户明确要求特定数量，请传入该数字。"},
-                "start_date": {"type": "string", "description": "起始日期，格式 YYYY-MM-DD"},
-                "end_date": {"type": "string", "description": "结束日期，格式 YYYY-MM-DD"}
-            }
-        }
-        
-        warning_parameters = {
-            "type": "object",
-            "properties": {
-                "limit": {"type": "integer", "description": "查询返回的记录数量，默认 10。"},
-                "threshold": {"type": "integer", "description": "低库存的警戒线数量，默认是 10。如果用户要求查库存低于 5 的，就传 5。"}
-            }
-        }
+        common_parameters = { "type": "object", "properties": { "limit": {"type": "integer", "description": "返回数量限制"}, "start_date": {"type": "string"}, "end_date": {"type": "string"} } }
+        warning_parameters = { "type": "object", "properties": { "limit": {"type": "integer"}, "threshold": {"type": "integer"} } }
+        report_parameters = { "type": "object", "properties": { "target_month": {"type": "string", "description": "YYYY-MM"} } }
+        overdue_parameters = { "type": "object", "properties": { "limit": {"type": "integer"} } }
+        expense_parameters = { "type": "object", "properties": { "target_month": {"type": "string", "description": "YYYY-MM"}, "cost_center": {"type": "string", "description": "成本中心名称，例如 'jd-test'"}, "limit": {"type": "integer"} } }
 
-        # 🌟 专供大模型识别的月份解析参数
-        report_parameters = {
-            "type": "object",
-            "properties": {
-                "target_month": {"type": "string", "description": "目标月份，必须严格输出为 YYYY-MM 格式，例如 2026-03。如果不确定请不传。"}
-            }
-        }
-
-        # 🌟 挂载九大金刚
+        # 🌟 挂载全套十二大金刚
         tools = [
-            {"type": "function", "function": {"name": "get_recent_sales_orders", "description": "当用户询问销售订单时调用。可按需提取日期或数量。", "parameters": common_parameters}},
-            {"type": "function", "function": {"name": "get_recent_sales_invoices", "description": "当用户询问销售发票时调用。可按需提取日期或数量。", "parameters": common_parameters}},
-            {"type": "function", "function": {"name": "get_recent_purchase_receipts", "description": "当用户询问采购入库时调用。可按需提取日期或数量。", "parameters": common_parameters}},
-            {"type": "function", "function": {"name": "get_recent_delivery_notes", "description": "当用户询问销售出库时调用。可按需提取日期或数量。", "parameters": common_parameters}},
-            {"type": "function", "function": {"name": "get_recent_supplier_quotations", "description": "当用户询问供应商报价时调用。可按需提取日期或数量。", "parameters": common_parameters}},
-            {"type": "function", "function": {"name": "get_recent_purchase_orders", "description": "当用户询问采购订单时调用。可按需提取日期或数量。", "parameters": common_parameters}},
-            {"type": "function", "function": {"name": "get_recent_purchase_invoices", "description": "当用户询问采购发票时调用。可按需提取日期或数量。", "parameters": common_parameters}},
-            {"type": "function", "function": {"name": "get_low_stock_warnings", "description": "当用户询问低库存预警、库存不足、快断货的商品时调用。可按需提取数量限制和预警阈值(threshold)。", "parameters": warning_parameters}},
-            # 🚨 终极武器：智能月报引擎
-            {"type": "function", "function": {"name": "generate_sales_monthly_report", "description": "当用户要求生成销售月报、分析上个月或本月业绩、查看大客户贡献榜时调用。必须推算目标月份并传给 target_month。", "parameters": report_parameters}}
+            {"type": "function", "function": {"name": "get_recent_sales_orders", "description": "当用户询问销售订单时调用", "parameters": common_parameters}},
+            {"type": "function", "function": {"name": "get_recent_sales_invoices", "description": "当用户询问销售发票时调用", "parameters": common_parameters}},
+            {"type": "function", "function": {"name": "get_recent_purchase_receipts", "description": "当用户询问采购入库时调用", "parameters": common_parameters}},
+            {"type": "function", "function": {"name": "get_recent_delivery_notes", "description": "当用户询问销售出库时调用", "parameters": common_parameters}},
+            {"type": "function", "function": {"name": "get_recent_supplier_quotations", "description": "当用户询问供应商报价时调用", "parameters": common_parameters}},
+            {"type": "function", "function": {"name": "get_recent_purchase_orders", "description": "当用户询问采购订单时调用", "parameters": common_parameters}},
+            {"type": "function", "function": {"name": "get_recent_purchase_invoices", "description": "当用户询问采购发票时调用", "parameters": common_parameters}},
+            {"type": "function", "function": {"name": "get_low_stock_warnings", "description": "当用户询问低库存预警时调用", "parameters": warning_parameters}},
+            {"type": "function", "function": {"name": "generate_sales_monthly_report", "description": "当用户要求生成销售月报时调用", "parameters": report_parameters}},
+            {"type": "function", "function": {"name": "get_overdue_sales_invoices", "description": "当用户要求查询逾期账款或催款清单时调用", "parameters": overdue_parameters}},
+            {"type": "function", "function": {"name": "get_financial_health_summary", "description": "当用户要求查询财务体检、公司总资产、总负债、利润、亏损、财务基本盘时调用。不需要任何参数。", "parameters": {"type": "object", "properties": {}}}},
+            # 🚨 终极武器十二：成本中心烧钱追踪器
+            {"type": "function", "function": {"name": "get_cost_center_expenses", "description": "当用户要求查询某个成本中心的花销、支出、烧钱情况或各项开销明细时调用", "parameters": expense_parameters}}
         ]
 
+        # 🌟 极其严厉的防脑补紧箍咒版本！
         current_date = frappe.utils.nowdate()
         messages = [
-            {"role": "system", "content": f"你是一个极其专业的企业级 ERPNext 智能业务助手和财务分析师。当前系统日期是 {current_date}。如果用户询问特定时间段的数据或月报，请极其聪明地推算对应日期或 YYYY-MM 格式传给工具。对于生成的数据，务必加上你的专业商业洞察，并用极其醒目的 Markdown（如加粗、表格、Emoji）排版！"},
+            {"role": "system", "content": f"你是一个极其专业的企业级 ERPNext 智能业务助手和财务总监。当前日期是 {current_date}。请根据数据生成极其醒目专业的 Markdown 汇报（加粗、表格、Emoji）。\n\n🚨【极其严格的红线指令】：\n1. 绝对、严禁、不允许捏造、虚构、模拟任何数据库中没有返回的商品名称、客户名、成本中心、明细科目或金额！\n2. 数据库返回什么，你就只能输出什么。如果返回的数据极其粗糙、缺少名称或只有一条记录，请原样呈现，坦诚告知老板当前数据不完善，绝对不允许为了报表好看而自行脑补或填充假数据！"},
             {"role": "user", "content": message}
         ]
         
@@ -278,60 +391,40 @@ def chat(message, platform, model_id):
         response_message = result_json["choices"][0]["message"]
 
         # =========================================================
-        # 🧠 极其强悍的“九路拦截”调度中心
+        # 🧠 极其强悍的“十二路拦截”调度中心
         # =========================================================
         if response_message.get("tool_calls"):
             tool_call = response_message["tool_calls"][0]
             function_name = tool_call["function"]["name"]
             tool_call_id = tool_call["id"]
             
-            try:
-                args = json.loads(tool_call["function"].get("arguments", "{}"))
-            except:
-                args = {}
-                
-            req_limit = args.get("limit", 5)
-            req_start = args.get("start_date")
-            req_end = args.get("end_date")
-            req_threshold = args.get("threshold", 10) 
-            req_target_month = args.get("target_month") # 月报专属
+            try: args = json.loads(tool_call["function"].get("arguments", "{}"))
+            except: args = {}
             
             valid_functions = [
-                "get_recent_sales_orders", "get_recent_sales_invoices", 
-                "get_recent_purchase_receipts", "get_recent_delivery_notes",
+                "get_recent_sales_orders", "get_recent_sales_invoices", "get_recent_purchase_receipts", "get_recent_delivery_notes",
                 "get_recent_supplier_quotations", "get_recent_purchase_orders", "get_recent_purchase_invoices",
-                "get_low_stock_warnings", "generate_sales_monthly_report"
+                "get_low_stock_warnings", "generate_sales_monthly_report", "get_overdue_sales_invoices", "get_financial_health_summary",
+                "get_cost_center_expenses"
             ]
             
             if function_name in valid_functions:
-                
-                if function_name == "get_recent_sales_orders":
-                    tool_result, btn_label, file_prefix = get_recent_sales_orders(req_limit, req_start, req_end), "📊 导出完整订单明细 (Excel)", "ERPNext销售订单导出"
-                elif function_name == "get_recent_sales_invoices":
-                    tool_result, btn_label, file_prefix = get_recent_sales_invoices(req_limit, req_start, req_end), "📊 导出完整发票明细 (Excel)", "ERPNext销售发票导出"
-                elif function_name == "get_recent_purchase_receipts":
-                    tool_result, btn_label, file_prefix = get_recent_purchase_receipts(req_limit, req_start, req_end), "📥 导出采购入库明细 (Excel)", "ERPNext采购入库导出"
-                elif function_name == "get_recent_delivery_notes":
-                    tool_result, btn_label, file_prefix = get_recent_delivery_notes(req_limit, req_start, req_end), "🚚 导出销售出库明细 (Excel)", "ERPNext销售出库导出"
-                elif function_name == "get_recent_supplier_quotations":
-                    tool_result, btn_label, file_prefix = get_recent_supplier_quotations(req_limit, req_start, req_end), "📝 导出供应商报价明细 (Excel)", "ERPNext供应商报价导出"
-                elif function_name == "get_recent_purchase_orders":
-                    tool_result, btn_label, file_prefix = get_recent_purchase_orders(req_limit, req_start, req_end), "🛍️ 导出采购订单明细 (Excel)", "ERPNext采购订单导出"
-                elif function_name == "get_recent_purchase_invoices":
-                    tool_result, btn_label, file_prefix = get_recent_purchase_invoices(req_limit, req_start, req_end), "🧾 导出采购发票明细 (Excel)", "ERPNext采购发票导出"
-                elif function_name == "get_low_stock_warnings":
-                    tool_result, btn_label, file_prefix = get_low_stock_warnings(args.get("limit", 10), req_threshold), "📦 导出低库存预警报表 (Excel)", "ERPNext低库存预警"
-                elif function_name == "generate_sales_monthly_report":
-                    # 极其智能地触发数据挖掘引擎
-                    tool_result, btn_label, file_prefix = generate_sales_monthly_report(req_target_month), "📈 导出本月大客户贡献榜 (Excel)", f"ERPNext销售月报_{req_target_month or '当月'}"
-                
+                if function_name == "get_recent_sales_orders": tool_result, btn_label, file_prefix = get_recent_sales_orders(args.get("limit", 5), args.get("start_date"), args.get("end_date")), "📊 导出订单", "ERPNext销售订单"
+                elif function_name == "get_recent_sales_invoices": tool_result, btn_label, file_prefix = get_recent_sales_invoices(args.get("limit", 5), args.get("start_date"), args.get("end_date")), "📊 导出发票", "ERPNext销售发票"
+                elif function_name == "get_recent_purchase_receipts": tool_result, btn_label, file_prefix = get_recent_purchase_receipts(args.get("limit", 5), args.get("start_date"), args.get("end_date")), "📥 导出入库", "ERPNext采购入库"
+                elif function_name == "get_recent_delivery_notes": tool_result, btn_label, file_prefix = get_recent_delivery_notes(args.get("limit", 5), args.get("start_date"), args.get("end_date")), "🚚 导出出库", "ERPNext销售出库"
+                elif function_name == "get_recent_supplier_quotations": tool_result, btn_label, file_prefix = get_recent_supplier_quotations(args.get("limit", 5), args.get("start_date"), args.get("end_date")), "📝 导出报价", "ERPNext供应商报价"
+                elif function_name == "get_recent_purchase_orders": tool_result, btn_label, file_prefix = get_recent_purchase_orders(args.get("limit", 5), args.get("start_date"), args.get("end_date")), "🛍️ 导出订单", "ERPNext采购订单"
+                elif function_name == "get_recent_purchase_invoices": tool_result, btn_label, file_prefix = get_recent_purchase_invoices(args.get("limit", 5), args.get("start_date"), args.get("end_date")), "🧾 导出发票", "ERPNext采购发票"
+                elif function_name == "get_low_stock_warnings": tool_result, btn_label, file_prefix = get_low_stock_warnings(args.get("limit", 10), args.get("threshold", 10)), "📦 导出低库存预警", "ERPNext低库存"
+                elif function_name == "generate_sales_monthly_report": tool_result, btn_label, file_prefix = generate_sales_monthly_report(args.get("target_month")), "📈 导出大客户榜", f"ERPNext销售月报"
+                elif function_name == "get_overdue_sales_invoices": tool_result, btn_label, file_prefix = get_overdue_sales_invoices(args.get("limit", 10)), "💰 导出催款清单", "ERPNext催款清单"
+                elif function_name == "get_financial_health_summary": tool_result, btn_label, file_prefix = get_financial_health_summary(), "🏥 导出财务体检报告 (Excel)", "ERPNext财务体检"
+                # 🚨 触发成本烧钱追踪大招
+                elif function_name == "get_cost_center_expenses": tool_result, btn_label, file_prefix = get_cost_center_expenses(args.get("cost_center"), args.get("target_month"), args.get("limit", 10)), "💸 导出成本追踪明细 (Excel)", "ERPNext成本追踪"
+
                 messages.append(response_message)
-                messages.append({
-                    "role": "tool",
-                    "tool_call_id": tool_call_id,
-                    "name": function_name,
-                    "content": tool_result["text"]
-                })
+                messages.append({"role": "tool", "tool_call_id": tool_call_id, "name": function_name, "content": tool_result["text"]})
                 
                 payload["messages"] = messages
                 payload.pop("tools", None)
@@ -344,32 +437,9 @@ def chat(message, platform, model_id):
                 return {
                     "status": "success",
                     "reply": final_reply,
-                    "action_button": {
-                        "type": "export_excel",
-                        "label": btn_label,
-                        "data": tool_result["data"],
-                        "file_prefix": file_prefix 
-                    },
-                    "logs": [
-                        "后端 Python 接口触发成功！",
-                        f"大模型极其聪明地调用了核心架构引擎：{function_name}。",
-                        "已成功完成极其深度的底层数据库计算与聚合汇总！",
-                        "大模型已收到财务数据并生成了顶级商业洞察报告！"
-                    ]
+                    "action_button": { "type": "export_excel", "label": btn_label, "data": tool_result["data"], "file_prefix": file_prefix },
+                    "logs": ["后端 Python 接口触发成功！", f"大模型极其聪明地调用了：{function_name}。"]
                 }
 
-        ai_reply = response_message.get("content")
-        return {
-            "status": "success",
-            "reply": ai_reply,
-            "logs": ["后端 Python 接口触发成功！", "大模型未触发数据库查询，已获取常规智能回复！"]
-        }
-
-    except Exception as e:
-        error_msg = str(e)
-        frappe.logger().error(f"AI API 请求失败: {error_msg}")
-        return {
-            "status": "success",
-            "reply": f"⚠️ 报告老板，连接大脑时发生异常：<br><br><b>{error_msg}</b>",
-            "logs": ["发生网络或认证异常！请排查。"]
-        }
+        return {"status": "success", "reply": response_message.get("content"), "logs": ["大模型未触发数据库查询，已获取常规智能回复！"]}
+    except Exception as e: return {"status": "success", "reply": f"⚠️ 连接大脑时发生异常：<br><br><b>{str(e)}</b>", "logs": ["发生异常！"]}

@@ -8,12 +8,31 @@
     .ai-setting-item select, .ai-setting-item input { width: 100%; padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px; outline: none; background: #fff; }
     .ai-setting-item input[readonly] { background: #e2e8f0; color: #475569; }
     .context-tag { background-color: #e0f2fe; color: #0369a1; padding: 6px 12px; border-radius: 6px; font-size: 13px; margin-bottom: 10px; }
-    .ai-main-chat { flex: 1; display: flex; flex-direction: column; }
+    
+    .module-nav-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
+    .module-icon-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 5px; text-decoration: none; color: #475569; transition: all 0.2s; cursor: pointer; }
+    .module-icon-btn:hover { background: #e0f2fe; border-color: #7dd3fc; color: #0369a1; transform: translateY(-2px); box-shadow: 0 4px 6px rgba(3, 105, 161, 0.1); }
+    .module-icon-text { font-size: 12px; font-weight: bold; margin-top: 4px;}
+
+    .ai-main-chat { flex: 1; display: flex; flex-direction: column; position: relative; }
     .chat-history { flex: 1; padding: 20px; overflow-y: auto; background-color: #f8fafc; }
-    .quick-actions { display: flex; gap: 10px; padding: 12px 20px; background-color: #ffffff; border-top: 1px solid #e2e8f0; overflow-x: auto; }
-    .quick-btn { background-color: #f1f5f9; border: 1px solid #cbd5e1; padding: 8px 16px; border-radius: 20px; font-size: 13px; color: #475569; cursor: pointer; white-space: nowrap; transition: all 0.2s; }
+    
+    .quick-actions { display: flex; flex-wrap: wrap; gap: 10px; padding: 12px 20px; background-color: #ffffff; border-top: 1px solid #e2e8f0; align-items: center; }
+    
+    .quick-btn { background-color: #f1f5f9; border: 1px solid #cbd5e1; padding: 8px 16px; border-radius: 20px; font-size: 13px; color: #475569; cursor: pointer; white-space: nowrap; transition: all 0.2s; font-weight: bold; }
     .quick-btn:hover { background-color: #e2e8f0; color: #0f172a; }
-    .chat-input-area { display: flex; padding: 15px 20px; background-color: #ffffff; }
+    
+    .dropdown { position: relative; display: inline-block; }
+    .dropdown-content { display: none; position: absolute; bottom: 100%; left: 0; background-color: #ffffff; min-width: 150px; box-shadow: 0px -4px 16px 0px rgba(0,0,0,0.1); z-index: 9999; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden; margin-bottom: 8px; }
+    .dropdown-content a { color: #475569; padding: 10px 16px; text-decoration: none; display: block; font-size: 13px; transition: background 0.2s; font-weight: normal; border-bottom: 1px solid #f1f5f9; }
+    .dropdown-content a:last-child { border-bottom: none; }
+    .dropdown-content a:hover { background-color: #f8fafc; color: #0f172a; font-weight: bold; }
+    
+    /* 🌟 核心修复点：将 hover 替换为极其稳定的动态 JS 挂载类 show-menu */
+    .dropdown.show-menu .dropdown-content { display: block; }
+    .dropdown.show-menu .quick-btn { background-color: #e2e8f0; color: #0f172a; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); }
+
+    .chat-input-area { display: flex; padding: 15px 20px; background-color: #ffffff; border-top: 1px dashed #e2e8f0; }
     .chat-input { flex: 1; padding: 12px 15px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none; font-size: 14px; }
     .send-btn { margin-left: 10px; background-color: #2490ef; color: white; border: none; padding: 0 25px; border-radius: 6px; cursor: pointer; font-weight: bold; }
     .ai-log-panel { height: 150px; background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
@@ -53,26 +72,49 @@
             <div class="ai-setting-item"><label>调用模型 ID</label><input type="text" id="ai-model-id" value="qwen-plus" readonly></div>
             <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 15px 0;">
             <div class="panel-header">📍 当前业务上下文</div>
-            <div class="context-tag">模块: 销售、采购、库存</div>
-            <div class="context-tag">状态: 九大核心（含数据分析）挂载完毕</div>
+            <div class="context-tag">模块: 销售、采购、库存、财务</div>
+            <div class="context-tag">状态: 十二大核心（含成本追踪雷达）完美挂载</div>
+
+            <hr style="border: 0; border-top: 1px dashed #cbd5e1; margin: 15px 0;">
+            <div class="panel-header">🚀 ERPNext 模块直达</div>
+            <div class="module-nav-grid">
+                <a href="/app/selling" target="_blank" class="module-icon-btn" title="前往销售模块"><span style="font-size: 24px;">🏪</span><span class="module-icon-text">销售</span></a>
+                <a href="/app/buying" target="_blank" class="module-icon-btn" title="前往采购模块"><span style="font-size: 24px;">🛍️</span><span class="module-icon-text">采购</span></a>
+                <a href="/app/stock" target="_blank" class="module-icon-btn" title="前往库存模块"><span style="font-size: 24px;">📦</span><span class="module-icon-text">库存</span></a>
+                <a href="/app/accounting" target="_blank" class="module-icon-btn" title="前往会计模块"><span style="font-size: 24px;">💰</span><span class="module-icon-text">会计</span></a>
+                <a href="/app/manufacturing" target="_blank" class="module-icon-btn" title="前往生产模块"><span style="font-size: 24px;">🏭</span><span class="module-icon-text">生产</span></a>
+                <a href="/app/projects" target="_blank" class="module-icon-btn" title="前往项目模块"><span style="font-size: 24px;">📊</span><span class="module-icon-text">项目</span></a>
+            </div>
+
         </div>
         <div class="ai-main-chat">
             <div class="chat-history" id="chat-history">
-                <div style="text-align: left; margin-bottom: 15px;"><span style="background: #ffffff; border: 1px solid #e2e8f0; padding: 10px 15px; border-radius: 15px 15px 15px 0; display: inline-block;">您好！我是企业智能助手。底层数据库及数据分析引擎已挂载，随时可生成报表。</span></div>
+                <div style="text-align: left; margin-bottom: 15px;"><span style="background: #ffffff; border: 1px solid #e2e8f0; padding: 10px 15px; border-radius: 15px 15px 15px 0; display: inline-block;">您好老板！我是您的专属企业智能助手。底层总账与费用明细监控已挂载，败家雷达随时待命！</span></div>
             </div>
+            
             <div class="quick-actions">
-                <button class="quick-btn" data-msg="帮我生成本月的销售月报及大客户贡献榜">📊 帮我生成销售月报</button>
-                <button class="quick-btn" data-msg="帮我查一下当前库存数量低于 10 的商品">📦 低库存预警</button>
-                <button class="quick-btn" data-msg="查看最近的销售订单">🛒 销售订单</button>
-                <button class="quick-btn" data-msg="查看最近的销售发票">🧾 销售发票</button>
-                <button class="quick-btn" data-msg="查看最近的采购入库单">📥 采购入库</button>
-                <button class="quick-btn" data-msg="查看最近的销售出库单">🚚 销售出库</button>
-                <button class="quick-btn" data-msg="查看最近的供应商报价">📝 供应商报价</button>
-                <button class="quick-btn" data-msg="查看最近的采购订单">🛍️ 采购订单</button>
-                <button class="quick-btn" data-msg="查看最近的采购发票">🧾 采购发票</button>
+                <button class="quick-btn" data-msg="生成一句话财务体检报告，看看公司总资产、负债和目前的利润">🏥 财务体检</button>
+                <button class="quick-btn" data-msg="帮我查一下目前有哪些客户的账款逾期了？列出催款清单">🚨 智能催款</button>
+                <button class="quick-btn" data-msg="帮我查一下上个月各成本中心一共烧了多少钱？列出开销明细">💸 成本追踪</button>
+                <button class="quick-btn" data-msg="帮我生成本月的销售月报及大客户贡献榜">📊 销售月报</button>
+                
+                <div class="dropdown">
+                    <button class="quick-btn" style="background-color: #cbd5e1; color: #1e293b;">🎛️ 更多日常查询 ▾</button>
+                    <div class="dropdown-content">
+                        <a href="#" class="quick-btn-menu" data-msg="帮我查一下当前库存数量低于 10 的商品">📦 低库存预警</a>
+                        <a href="#" class="quick-btn-menu" data-msg="查看最近的销售订单">🛒 销售订单</a>
+                        <a href="#" class="quick-btn-menu" data-msg="查看最近的销售发票">🧾 销售发票</a>
+                        <a href="#" class="quick-btn-menu" data-msg="查看最近的采购入库单">📥 采购入库</a>
+                        <a href="#" class="quick-btn-menu" data-msg="查看最近的销售出库单">🚚 销售出库</a>
+                        <a href="#" class="quick-btn-menu" data-msg="查看最近的供应商报价">📝 供应商报价</a>
+                        <a href="#" class="quick-btn-menu" data-msg="查看最近的采购订单">🛍️ 采购订单</a>
+                        <a href="#" class="quick-btn-menu" data-msg="查看最近的采购发票">🧾 采购发票</a>
+                    </div>
+                </div>
             </div>
+            
             <div class="chat-input-area">
-                <input type="text" id="ai-user-input" class="chat-input" placeholder="输入你想查询的业务数据或操作问题...">
+                <input type="text" id="ai-user-input" class="chat-input" placeholder="老板，想查点什么？或者下达什么指令？">
                 <button class="send-btn" id="send-btn">发送</button>
             </div>
         </div>
