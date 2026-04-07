@@ -53,5 +53,3 @@ jspm_packages/
 
 # Aider AI Chat
 .aider*
-__pycache__/
-*.pyc

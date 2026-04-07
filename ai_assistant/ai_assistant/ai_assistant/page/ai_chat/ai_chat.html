@@ -23,14 +23,17 @@
     .quick-btn:hover { background-color: #e2e8f0; color: #0f172a; }
     
     .dropdown { position: relative; display: inline-block; }
-    .dropdown-content { display: none; position: absolute; bottom: 100%; left: 0; background-color: #ffffff; min-width: 150px; box-shadow: 0px -4px 16px 0px rgba(0,0,0,0.1); z-index: 9999; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden; margin-bottom: 8px; }
+    
+    .dropdown-content { display: none; position: absolute; bottom: 100%; left: 0; background-color: #ffffff; min-width: 170px; max-height: 280px; overflow-y: auto; box-shadow: 0px -4px 16px 0px rgba(0,0,0,0.1); z-index: 9999; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 8px; }
+    .dropdown-content::-webkit-scrollbar { width: 4px; }
+    .dropdown-content::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    
     .dropdown-content a { color: #475569; padding: 10px 16px; text-decoration: none; display: block; font-size: 13px; transition: background 0.2s; font-weight: normal; border-bottom: 1px solid #f1f5f9; }
     .dropdown-content a:last-child { border-bottom: none; }
     .dropdown-content a:hover { background-color: #f8fafc; color: #0f172a; font-weight: bold; }
     
-    /* 🌟 核心修复点：将 hover 替换为极其稳定的动态 JS 挂载类 show-menu */
     .dropdown.show-menu .dropdown-content { display: block; }
-    .dropdown.show-menu .quick-btn { background-color: #e2e8f0; color: #0f172a; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); }
+    .dropdown.show-menu .quick-btn { filter: brightness(0.95); box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); }
 
     .chat-input-area { display: flex; padding: 15px 20px; background-color: #ffffff; border-top: 1px dashed #e2e8f0; }
     .chat-input { flex: 1; padding: 12px 15px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none; font-size: 14px; }
@@ -63,7 +66,7 @@
             <div class="ai-setting-item">
                 <label>选择 AI 平台</label>
                 <select id="ai-platform">
-                    <option value="deepseek">DeepSeek (性价比首选)</option>
+                    <option value="deepseek">DeepSeek</option>
                     <option value="qwen" selected>Qwen 通义千问</option>
                     <option value="glm4">GLM-4 智谱</option>
                 </select>
@@ -72,8 +75,7 @@
             <div class="ai-setting-item"><label>调用模型 ID</label><input type="text" id="ai-model-id" value="qwen-plus" readonly></div>
             <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 15px 0;">
             <div class="panel-header">📍 当前业务上下文</div>
-            <div class="context-tag">模块: 销售、采购、库存、财务</div>
-            <div class="context-tag">状态: 十二大核心（含成本追踪雷达）完美挂载</div>
+            <div id="ai-context-status"></div>
 
             <hr style="border: 0; border-top: 1px dashed #cbd5e1; margin: 15px 0;">
             <div class="panel-header">🚀 ERPNext 模块直达</div>
@@ -81,26 +83,41 @@
                 <a href="/app/selling" target="_blank" class="module-icon-btn" title="前往销售模块"><span style="font-size: 24px;">🏪</span><span class="module-icon-text">销售</span></a>
                 <a href="/app/buying" target="_blank" class="module-icon-btn" title="前往采购模块"><span style="font-size: 24px;">🛍️</span><span class="module-icon-text">采购</span></a>
                 <a href="/app/stock" target="_blank" class="module-icon-btn" title="前往库存模块"><span style="font-size: 24px;">📦</span><span class="module-icon-text">库存</span></a>
-                <a href="/app/accounting" target="_blank" class="module-icon-btn" title="前往会计模块"><span style="font-size: 24px;">💰</span><span class="module-icon-text">会计</span></a>
-                <a href="/app/manufacturing" target="_blank" class="module-icon-btn" title="前往生产模块"><span style="font-size: 24px;">🏭</span><span class="module-icon-text">生产</span></a>
                 <a href="/app/projects" target="_blank" class="module-icon-btn" title="前往项目模块"><span style="font-size: 24px;">📊</span><span class="module-icon-text">项目</span></a>
+                <a href="/app/asset" target="_blank" class="module-icon-btn" id="nav-asset-btn" title="前往资产模块"><span style="font-size: 24px;">🏢</span><span class="module-icon-text">资产</span></a>
+                <a href="/app/manufacturing" target="_blank" class="module-icon-btn" title="前往生产模块"><span style="font-size: 24px;">🏭</span><span class="module-icon-text">生产</span></a>
             </div>
 
         </div>
         <div class="ai-main-chat">
             <div class="chat-history" id="chat-history">
-                <div style="text-align: left; margin-bottom: 15px;"><span style="background: #ffffff; border: 1px solid #e2e8f0; padding: 10px 15px; border-radius: 15px 15px 15px 0; display: inline-block;">您好老板！我是您的专属企业智能助手。底层总账与费用明细监控已挂载，败家雷达随时待命！</span></div>
+                <div style="text-align: left; margin-bottom: 15px;"><span id="ai-greeting-text" style="background: #ffffff; border: 1px solid #e2e8f0; padding: 10px 15px; border-radius: 15px 15px 15px 0; display: inline-block;">您好老板！我是您的专属企业智能助手。全系金刚已就位，请下达指令！</span></div>
             </div>
             
             <div class="quick-actions">
-                <button class="quick-btn" data-msg="生成一句话财务体检报告，看看公司总资产、负债和目前的利润">🏥 财务体检</button>
-                <button class="quick-btn" data-msg="帮我查一下目前有哪些客户的账款逾期了？列出催款清单">🚨 智能催款</button>
-                <button class="quick-btn" data-msg="帮我查一下上个月各成本中心一共烧了多少钱？列出开销明细">💸 成本追踪</button>
-                <button class="quick-btn" data-msg="帮我生成本月的销售月报及大客户贡献榜">📊 销售月报</button>
+                
+                <div class="dropdown" id="finance-menu">
+                    <button class="quick-btn" style="background-color: #fef08a; color: #854d0e; border-color: #fde047;">💰 财务会计 ▾</button>
+                    <div class="dropdown-content">
+                        <a href="#" class="quick-btn-menu" data-msg="生成一句话财务体检报告，看看公司总资产、负债和目前的利润">🏥 财务体检</a>
+                        <a href="#" class="quick-btn-menu" data-msg="帮我查一下目前有哪些客户的账款逾期了？列出催款清单">🚨 智能催款</a>
+                        <a href="#" class="quick-btn-menu" data-msg="帮我查一下上个月各成本中心一共烧了多少钱？列出开销明细">💸 成本追踪</a>
+                    </div>
+                </div>
+
+                <div class="dropdown" id="asset-menu">
+                    <button class="quick-btn" style="background-color: #bae6fd; color: #075985; border-color: #7dd3fc;">🏢 固定资产 ▾</button>
+                    <div class="dropdown-content">
+                        <a href="#" class="quick-btn-menu" data-msg="帮我盘点一下公司现在的固定资产家底，总共值多少钱？列出资产清单">🏢 资产盘点</a>
+                        <a href="#" class="quick-btn-menu" data-msg="查一下咱们目前最值钱的5个资产是什么？看看净值和贬值情况">📉 资产净值</a>
+                        <a href="#" class="quick-btn-menu" data-msg="有员工要离职了，查一下名下挂着哪些公司资产需要交接？">🏃‍♂️ 离职交接</a>
+                    </div>
+                </div>
                 
                 <div class="dropdown">
-                    <button class="quick-btn" style="background-color: #cbd5e1; color: #1e293b;">🎛️ 更多日常查询 ▾</button>
+                    <button class="quick-btn" style="background-color: #e2e8f0; color: #1e293b; border-color: #cbd5e1;">📦 进销存查询 ▾</button>
                     <div class="dropdown-content">
+                        <a href="#" class="quick-btn-menu" data-msg="帮我生成本月的销售月报及大客户贡献榜">📊 销售月报</a>
                         <a href="#" class="quick-btn-menu" data-msg="帮我查一下当前库存数量低于 10 的商品">📦 低库存预警</a>
                         <a href="#" class="quick-btn-menu" data-msg="查看最近的销售订单">🛒 销售订单</a>
                         <a href="#" class="quick-btn-menu" data-msg="查看最近的销售发票">🧾 销售发票</a>
@@ -111,10 +128,11 @@
                         <a href="#" class="quick-btn-menu" data-msg="查看最近的采购发票">🧾 采购发票</a>
                     </div>
                 </div>
+
             </div>
             
             <div class="chat-input-area">
-                <input type="text" id="ai-user-input" class="chat-input" placeholder="老板，想查点什么？或者下达什么指令？">
+                <input type="text" id="ai-user-input" class="chat-input" placeholder="输入指令，按下发送...">
                 <button class="send-btn" id="send-btn">发送</button>
             </div>
         </div>

@@ -19,30 +19,53 @@ frappe.pages['ai-chat'].on_page_load = function(wrapper) {
 
     const $wrapper = $(wrapper);
 
+    // =========================================================
+    // 🛡️ 极其极其极其霸气的前端 RBAC 权限拦截雷达！
+    // =========================================================
+    let is_boss = frappe.user.has_role('Administrator') || frappe.user.has_role('System Manager') || frappe.session.user === "Administrator";
+    
+    if (!is_boss) {
+        // 发现普通员工/马甲！直接进行物理超度，物理移除机密菜单！
+        $wrapper.find('#finance-menu').remove();
+        $wrapper.find('#asset-menu').remove();
+        $wrapper.find('#nav-asset-btn').remove(); // 顺手把左侧资产图标也藏了
+
+        $wrapper.find('#ai-context-status').html(`
+            <div class="context-tag">模块: 销售、采购、库存</div>
+            <div class="context-tag">状态: 普通员工级查询授权</div>
+        `);
+        $wrapper.find('#ai-greeting-text').text("您好！我是进销存智能助手，已为您开启安全查询模式。");
+        addLog('🔒 识别到员工权限，已自动触发系统级降级，物理移除机密业务模块！', 'warn');
+    } else {
+        // 老板登场！全功率开启！
+        $wrapper.find('#ai-context-status').html(`
+            <div class="context-tag">模块: 销售、采购、库存、财务、资产</div>
+            <div class="context-tag">状态: 高管最高级全链路授权</div>
+        `);
+        $wrapper.find('#ai-greeting-text').text("老板您好！企业全链路总管已就位，请随时下达最高指令！");
+        addLog('👑 识别到老板/管理员登场，系统全量金刚权限已完全解锁！', 'success');
+    }
+
     $wrapper.find('#ai-user-input').on('keypress', function(e) { if(e.which === 13) sendMessage(); });
     $wrapper.find('#send-btn').on('click', function() { sendMessage(); });
     
-    // 🌟 极其极其极其稳定的点击展开交互：彻底干掉不稳定的 Hover！
     $wrapper.find('.dropdown > .quick-btn').on('click', function(e) {
-        e.stopPropagation(); // 极其关键：防止点击事件冒泡到 document，导致刚打开就秒关！
+        e.stopPropagation(); 
         $(this).parent('.dropdown').toggleClass('show-menu');
     });
 
-    // 🌟 极其乖巧的自动收起功能：当老板点击页面其他极其空白的地方时
     $(document).on('click', function(e) {
         if (!$(e.target).closest('.dropdown').length) {
             $wrapper.find('.dropdown').removeClass('show-menu');
         }
     });
 
-    // 🌟 极其聪明的指令分发中枢
     $wrapper.find('.quick-btn, .quick-btn-menu').on('click', function(e) {
         let msg = $(this).attr('data-msg');
         if (msg) {
-            e.preventDefault(); // 防止下拉菜单的超链接瞎跳
+            e.preventDefault(); 
             $wrapper.find('#ai-user-input').val(msg);
             sendMessage();
-            // 极其贴心：老板一下达指令，菜单极其丝滑地自动收起隐身！
             $wrapper.find('.dropdown').removeClass('show-menu'); 
         }
     });
@@ -80,7 +103,7 @@ frappe.pages['ai-chat'].on_page_load = function(wrapper) {
             return;
         }
 
-        addLog('收到老板指令，正在内存中拼装 Excel 数据格式...', 'sys');
+        addLog('正在内存中拼装 Excel 数据格式...', 'sys');
         
         let csvContent = '\uFEFF'; 
         let headers = Object.keys(data[0]);
@@ -118,13 +141,12 @@ frappe.pages['ai-chat'].on_page_load = function(wrapper) {
         history.innerHTML += `<div style="text-align: right; margin-bottom: 15px;"><span style="background: #2490ef; color: white; padding: 10px 15px; border-radius: 15px 15px 0 15px; display: inline-block;">${text}</span></div>`;
         input.value = '';
 
-        addLog(`接收到指令：[${text}]，正在构建查询上下文...`, 'sys');
+        addLog(`接收到指令：[${text}]，正在构建安全查询上下文...`, 'sys');
         let loadingId = 'loading-' + Date.now();
         history.innerHTML += `<div id="${loadingId}" style="text-align: left; margin-bottom: 15px; color: #64748b;">AI 正在生成精美排版中...</div>`;
         history.scrollTop = history.scrollHeight;
 
         let currentModel = $wrapper.find('#ai-model-id').val();
-        addLog(`正在通过加密通道向 [${currentModel}] 发起请求...`, 'warn');
 
         frappe.call({
             method: "ai_assistant.ai_assistant.api.chat",
