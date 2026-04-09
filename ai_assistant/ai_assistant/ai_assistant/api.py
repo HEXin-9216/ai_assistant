@@ -558,11 +558,11 @@ def get_employee_assets(employee_name=None):
     except Exception as e: 
         return {"text": f"执行员工资产追踪雷达扫描失败：{str(e)}", "data": []}
 
-
+# 💥 极其关键的修改：接收 JS 传来的 lang 语言参数！
 @frappe.whitelist()
-def chat(message, platform, model_id):
+def chat(message, platform, model_id, lang="zh"):
     API_KEY = "sk-0bdcab13594f47d881b89ea415355401"
-    frappe.logger().info(f"AI 小助手接收到指令：[{message}]，准备呼叫：[{model_id}]")
+    frappe.logger().info(f"AI 小助手接收到指令：[{message}]，准备呼叫：[{model_id}]，语言锁定为：[{lang}]")
 
     try:
         url = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
@@ -611,9 +611,12 @@ def chat(message, platform, model_id):
         current_date = frappe.utils.nowdate()
         seven_days_ago = frappe.utils.add_days(current_date, -7)
 
-        # 🌟 AI 灵魂进阶：新增默认查询 7 天最高指令 + 极其高冷的越权拦截防线！
+        # 💥 极其强硬的大模型语言思想钢印！
+        lang_map = {"zh": "中文(Chinese)", "en": "English", "es": "Español (Spanish/Mexican)"}
+        target_language = lang_map.get(lang, "中文(Chinese)")
+
         messages = [
-            {"role": "system", "content": f"你是一个极其专业的企业级 ERPNext 智能业务助手和财务总监。当前日期是 {current_date}。请根据数据生成极其醒目专业的 Markdown 汇报（加粗、表格、Emoji）。\n\n🚨【极其严格的红线指令】：\n1. 绝对、严禁、不允许捏造、虚构、模拟任何数据库中没有返回的商品名称、客户名、成本中心、资产名称、明细科目或金额！\n2. 数据库返回什么，你就只能输出什么。如果返回的数据极其粗糙、缺少名称或只有一条记录，请原样呈现，坦诚告知老板当前数据不完善，绝对不允许为了报表好看而自行脑补或填充假数据！\n3. 为防止系统 Token 爆炸与性能崩溃，所有列表查询底层已硬性截断，最大仅返回 50 条。若用户请求的数据量庞大（被系统截断），请务必在回答中极其专业地向老板说明：'为保障系统性能与响应速度，已为您截断展示最新的50条记录，完整全量数据请通过左侧模块导航，前往 ERPNext 标准系统界面查阅全貌！'\n4. 🕰️ 【默认时间范围指令】：当用户查询“最近”、“当前”的单据数据，且没有显式指定具体日期时，请务必默认将查询时间范围设定为过去 7 天（即 start_date='{seven_days_ago}', end_date='{current_date}'），绝不能仅局限于当天！\n5. 🚫 【越权拦截高冷指令】：如果你发现当前可用的工具列表中无法完成用户的查询（例如用户询问财务、成本中心、资产或利润，但你发现自己只有进销存工具），请你极其高冷地直接回复：『⚠️ 抱歉，您的账号当前无权访问该机密业务模块。』绝对不允许向用户解释你缺少什么函数，也绝对不允许使用现有的进销存数据进行生搬硬套或拼凑糊弄！"},
+            {"role": "system", "content": f"你是一个极其专业的企业级 ERPNext 智能业务助手和财务总监。当前日期是 {current_date}。请根据数据生成极其醒目专业的 Markdown 汇报（加粗、表格、Emoji）。\n\n🚨【极其严格的红线指令】：\n1. 绝对、严禁、不允许捏造、虚构、模拟任何数据库中没有返回的商品名称、客户名、成本中心、资产名称、明细科目或金额！\n2. 数据库返回什么，你就只能输出什么。如果返回的数据极其粗糙、缺少名称或只有一条记录，请原样呈现，坦诚告知老板当前数据不完善，绝对不允许为了报表好看而自行脑补或填充假数据！\n3. 为防止系统 Token 爆炸与性能崩溃，所有列表查询底层已硬性截断，最大仅返回 50 条。若用户请求的数据量庞大（被系统截断），请务必在回答中极其专业地向老板说明：'为保障系统性能与响应速度，已为您截断展示最新的50条记录，完整全量数据请通过左侧模块导航，前往 ERPNext 标准系统界面查阅全貌！'\n4. 🕰️ 【默认时间范围指令】：当用户查询“最近”、“当前”的单据数据，且没有显式指定具体日期时，请务必默认将查询时间范围设定为过去 7 天（即 start_date='{seven_days_ago}', end_date='{current_date}'），绝不能仅局限于当天！\n5. 🚫 【越权拦截高冷指令】：如果你发现当前可用的工具列表中无法完成用户的查询（例如用户询问财务、成本中心、资产或利润，但你发现自己只有进销存工具），请你极其高冷地直接回复：『⚠️ 抱歉，您的账号当前无权访问该机密业务模块。』绝对不允许向用户解释你缺少什么函数，也绝对不允许使用现有的进销存数据进行生搬硬套或拼凑糊弄！\n6. 🌐【国际化绝对指令】：当前登录用户的 ERPNext 系统语言已经切换为【{target_language}】！从现在开始，你必须、绝对、极其严格地使用【{target_language}】来书写所有的分析、报表、问候和回答！这是不可违背的最高原则！"},
             {"role": "user", "content": message}
         ]
         
@@ -643,21 +646,22 @@ def chat(message, platform, model_id):
             ]
             
             if function_name in valid_functions:
-                if function_name == "get_recent_sales_orders": tool_result, btn_label, file_prefix = get_recent_sales_orders(args.get("limit", 5), args.get("start_date"), args.get("end_date")), "📊 导出订单", "ERPNext销售订单"
-                elif function_name == "get_recent_sales_invoices": tool_result, btn_label, file_prefix = get_recent_sales_invoices(args.get("limit", 5), args.get("start_date"), args.get("end_date")), "📊 导出发票", "ERPNext销售发票"
-                elif function_name == "get_recent_purchase_receipts": tool_result, btn_label, file_prefix = get_recent_purchase_receipts(args.get("limit", 5), args.get("start_date"), args.get("end_date")), "📥 导出入库", "ERPNext采购入库"
-                elif function_name == "get_recent_delivery_notes": tool_result, btn_label, file_prefix = get_recent_delivery_notes(args.get("limit", 5), args.get("start_date"), args.get("end_date")), "🚚 导出出库", "ERPNext销售出库"
-                elif function_name == "get_recent_supplier_quotations": tool_result, btn_label, file_prefix = get_recent_supplier_quotations(args.get("limit", 5), args.get("start_date"), args.get("end_date")), "📝 导出报价", "ERPNext供应商报价"
-                elif function_name == "get_recent_purchase_orders": tool_result, btn_label, file_prefix = get_recent_purchase_orders(args.get("limit", 5), args.get("start_date"), args.get("end_date")), "🛍️ 导出订单", "ERPNext采购订单"
-                elif function_name == "get_recent_purchase_invoices": tool_result, btn_label, file_prefix = get_recent_purchase_invoices(args.get("limit", 5), args.get("start_date"), args.get("end_date")), "🧾 导出发票", "ERPNext采购发票"
-                elif function_name == "get_low_stock_warnings": tool_result, btn_label, file_prefix = get_low_stock_warnings(args.get("limit", 10), args.get("threshold", 10)), "📦 导出低库存预警", "ERPNext低库存"
-                elif function_name == "generate_sales_monthly_report": tool_result, btn_label, file_prefix = generate_sales_monthly_report(args.get("target_month")), "📈 导出大客户榜", f"ERPNext销售月报"
-                elif function_name == "get_overdue_sales_invoices": tool_result, btn_label, file_prefix = get_overdue_sales_invoices(args.get("limit", 10)), "💰 导出催款清单", "ERPNext催款清单"
-                elif function_name == "get_financial_health_summary": tool_result, btn_label, file_prefix = get_financial_health_summary(), "🏥 导出财务体检报告 (Excel)", "ERPNext财务体检"
-                elif function_name == "get_cost_center_expenses": tool_result, btn_label, file_prefix = get_cost_center_expenses(args.get("cost_center"), args.get("target_month"), args.get("limit", 10)), "💸 导出成本追踪明细 (Excel)", "ERPNext成本追踪"
-                elif function_name == "get_asset_inventory_snapshot": tool_result, btn_label, file_prefix = get_asset_inventory_snapshot(), "🏢 导出资产盘点清单 (Excel)", "ERPNext资产盘点"
-                elif function_name == "get_top_valuable_assets": tool_result, btn_label, file_prefix = get_top_valuable_assets(args.get("limit", 5)), "📉 导出资产净值排行 (Excel)", "ERPNext资产净值"
-                elif function_name == "get_employee_assets": tool_result, btn_label, file_prefix = get_employee_assets(args.get("employee_name")), "🏃‍♂️ 导出离职交接单 (Excel)", f"ERPNext离职交接单_{args.get('employee_name') or '未命名'}"
+                # 生成业务数据
+                if function_name == "get_recent_sales_orders": tool_result, file_prefix = get_recent_sales_orders(args.get("limit", 5), args.get("start_date"), args.get("end_date")), "ERPNext_Sales_Orders"
+                elif function_name == "get_recent_sales_invoices": tool_result, file_prefix = get_recent_sales_invoices(args.get("limit", 5), args.get("start_date"), args.get("end_date")), "ERPNext_Sales_Invoices"
+                elif function_name == "get_recent_purchase_receipts": tool_result, file_prefix = get_recent_purchase_receipts(args.get("limit", 5), args.get("start_date"), args.get("end_date")), "ERPNext_Purchase_Receipts"
+                elif function_name == "get_recent_delivery_notes": tool_result, file_prefix = get_recent_delivery_notes(args.get("limit", 5), args.get("start_date"), args.get("end_date")), "ERPNext_Delivery_Notes"
+                elif function_name == "get_recent_supplier_quotations": tool_result, file_prefix = get_recent_supplier_quotations(args.get("limit", 5), args.get("start_date"), args.get("end_date")), "ERPNext_Supplier_Quotations"
+                elif function_name == "get_recent_purchase_orders": tool_result, file_prefix = get_recent_purchase_orders(args.get("limit", 5), args.get("start_date"), args.get("end_date")), "ERPNext_Purchase_Orders"
+                elif function_name == "get_recent_purchase_invoices": tool_result, file_prefix = get_recent_purchase_invoices(args.get("limit", 5), args.get("start_date"), args.get("end_date")), "ERPNext_Purchase_Invoices"
+                elif function_name == "get_low_stock_warnings": tool_result, file_prefix = get_low_stock_warnings(args.get("limit", 10), args.get("threshold", 10)), "ERPNext_Low_Stock"
+                elif function_name == "generate_sales_monthly_report": tool_result, file_prefix = generate_sales_monthly_report(args.get("target_month")), f"ERPNext_Sales_Report"
+                elif function_name == "get_overdue_sales_invoices": tool_result, file_prefix = get_overdue_sales_invoices(args.get("limit", 10)), "ERPNext_Overdue_Invoices"
+                elif function_name == "get_financial_health_summary": tool_result, file_prefix = get_financial_health_summary(), "ERPNext_Financial_Health"
+                elif function_name == "get_cost_center_expenses": tool_result, file_prefix = get_cost_center_expenses(args.get("cost_center"), args.get("target_month"), args.get("limit", 10)), "ERPNext_Cost_Center_Expenses"
+                elif function_name == "get_asset_inventory_snapshot": tool_result, file_prefix = get_asset_inventory_snapshot(), "ERPNext_Asset_Inventory"
+                elif function_name == "get_top_valuable_assets": tool_result, file_prefix = get_top_valuable_assets(args.get("limit", 5)), "ERPNext_Top_Assets"
+                elif function_name == "get_employee_assets": tool_result, file_prefix = get_employee_assets(args.get("employee_name")), f"ERPNext_Employee_Assets"
 
                 messages.append(response_message)
                 messages.append({"role": "tool", "tool_call_id": tool_call_id, "name": function_name, "content": tool_result["text"]})
@@ -670,12 +674,54 @@ def chat(message, platform, model_id):
                 second_response.raise_for_status()
                 final_reply = second_response.json()["choices"][0]["message"]["content"]
                 
+                # 👇 ========================================================= 👇
+                # 🚀 极其优雅的表头翻译拦截器 (Header Translation Interceptor) 
+                # 👇 ========================================================= 👇
+                export_data = tool_result.get("data", [])
+                if lang in ["en", "es"] and export_data:
+                    header_dict = {
+                        "en": {
+                            "订单编号": "Order Number", "客户名称": "Customer Name", "交易日期": "Transaction Date", "总金额(元)": "Total Amount (CNY)", "当前状态": "Status",
+                            "发票编号": "Invoice Number", "开票日期": "Posting Date", "入库单编号": "Receipt Number", "供应商名称": "Supplier Name", "入库日期": "Receipt Date",
+                            "出库单编号": "Delivery Note Number", "出库日期": "Posting Date", "报价单编号": "Quotation Number", "报价日期": "Quotation Date",
+                            "采购订单编号": "PO Number", "采购发票编号": "Purchase Invoice Number", "商品编码": "Item Code", "所在仓库": "Warehouse",
+                            "实际库存量": "Actual Qty", "预警警戒线": "Threshold", "统计月份": "Month", "排名": "Rank", "大客户名称": "Top Customer",
+                            "下单总笔数": "Total Orders", "总贡献金额(元)": "Total Revenue (CNY)", "最晚收款日": "Due Date", "发票总金额(元)": "Invoice Total (CNY)",
+                            "拖欠未付金额(元)": "Outstanding Amount (CNY)", "已逾期天数": "Overdue Days", "体检日期": "Date", "总资产(元)": "Total Assets (CNY)",
+                            "总负债(元)": "Total Liabilities (CNY)", "总计收入(元)": "Total Income (CNY)", "总计支出(元)": "Total Expense (CNY)", "净利润(元)": "Net Profit (CNY)",
+                            "成本中心": "Cost Center", "支出科目": "Expense Account", "净支出金额(元)": "Net Expense (CNY)", "资产编号": "Asset Number",
+                            "资产名称": "Asset Name", "所属部门": "Department", "存放位置": "Location", "价值(元)": "Value (CNY)", "采购原值(元)": "Purchase Value (CNY)",
+                            "当前净值(元)": "Net Value (CNY)", "贬值率(%)": "Depreciation Rate (%)", "被查员工": "Employee", "系统登记者": "Custodian"
+                        },
+                        "es": {
+                            "订单编号": "Número de Pedido", "客户名称": "Cliente", "交易日期": "Fecha de Transacción", "总金额(元)": "Monto Total (CNY)", "当前状态": "Estado",
+                            "发票编号": "Número de Factura", "开票日期": "Fecha de Contabilización", "入库单编号": "Número de Recibo", "供应商名称": "Proveedor", "入库日期": "Fecha de Recibo",
+                            "出库单编号": "Número de Entrega", "出库日期": "Fecha de Contabilización", "报价单编号": "Número de Cotización", "报价日期": "Fecha de Cotización",
+                            "采购订单编号": "Número de OC", "采购发票编号": "Factura de Compra", "商品编码": "Código de Artículo", "所在仓库": "Almacén",
+                            "实际库存量": "Cant. Actual", "预警警戒线": "Umbral", "统计月份": "Mes", "排名": "Rango", "大客户名称": "Mejor Cliente",
+                            "下单总笔数": "Total de Pedidos", "总贡献金额(元)": "Ingresos Totales (CNY)", "最晚收款日": "Fecha de Vencimiento", "发票总金额(元)": "Total de Factura (CNY)",
+                            "拖欠未付金额(元)": "Monto Pendiente (CNY)", "已逾期天数": "Días de Atraso", "体检日期": "Fecha", "总资产(元)": "Activos Totales (CNY)",
+                            "总负债(元)": "Pasivos Totales (CNY)", "总计收入(元)": "Ingresos Totales (CNY)", "总计支出(元)": "Gastos Totales (CNY)", "净利润(元)": "Beneficio Neto (CNY)",
+                            "成本中心": "Centro de Costos", "支出科目": "Cuenta de Gastos", "净支出金额(元)": "Gasto Neto (CNY)", "资产编号": "Número de Activo",
+                            "资产名称": "Nombre del Activo", "所属部门": "Departamento", "存放位置": "Ubicación", "价值(元)": "Valor (CNY)", "采购原值(元)": "Valor de Compra (CNY)",
+                            "当前净值(元)": "Valor Neto (CNY)", "贬值率(%)": "Tasa de Depreciación (%)", "被查员工": "Empleado", "系统登记者": "Custodio"
+                        }
+                    }
+                    lang_dict = header_dict.get(lang, {})
+                    translated_data = []
+                    for row in export_data:
+                        translated_row = {}
+                        for k, v in row.items():
+                            translated_row[lang_dict.get(k, k)] = v
+                        translated_data.append(translated_row)
+                    export_data = translated_data
+
                 return {
                     "status": "success",
                     "reply": final_reply,
-                    "action_button": { "type": "export_excel", "label": btn_label, "data": tool_result["data"], "file_prefix": file_prefix },
+                    "action_button": { "type": "export_excel", "label": "⬇️ Export Data / 导出数据", "data": export_data, "file_prefix": file_prefix },
                     "logs": ["后端 Python 接口触发成功！", f"大模型极其聪明地调用了：{function_name}。"]
                 }
 
         return {"status": "success", "reply": response_message.get("content"), "logs": ["大模型未触发数据库查询，已获取常规智能回复！"]}
-    except Exception as e: return {"status": "success", "reply": f"⚠️ 连接大脑时发生异常：<br><br><b>{str(e)}</b>", "logs": ["发生异常！"]}
+    except Exception as e: return {"status": "success", "reply": f"⚠️ 连接大脑时发生异常 / Connection Error：<br><br><b>{str(e)}</b>", "logs": ["发生异常！"]}
